@@ -1,0 +1,477 @@
+OpenFlow Technical Deep Dive ... Teleprompter Script
+Veenu Yadav ... March 2026
+
+
+
+... Slide 1 ... Title ...
+
+Good morning everyone. I'm Veenu ... and today I'm going to show you how Snowflake is solving the hardest problem in data engineering ... getting data in.
+
+
+
+... Slide 2 ... Safe Harbor ...
+
+Quick legal note. Some features are G A, some are in preview. I'll call out the status as we go. Roadmap items are directional, not commitments. ... Let's get to the good stuff.
+
+
+
+... Slide 3 ... Agenda ...
+
+Here's how the next 45 minutes will flow. Three acts.
+
+Act 1 ... The Why. What is OpenFlow, what's NiFi under the hood, and the real question ... what does OpenFlow solve that NiFi alone can't?
+
+Act 2 ... The How. Architecture, connectors, deployment models, and how you monitor all of it.
+
+Act 3 ... The Proof. Live demo and real-world use cases ... CDC, streaming, SaaS, unstructured data for AI.
+
+Jump in with questions anytime. This is a conversation, not a monologue.
+
+
+
+... Slide 4 ... OpenFlow Overview ... section break ...
+
+
+
+... Slide 5 ... Snowflake OpenFlow ...
+
+One sentence. OpenFlow is Snowflake's fully managed data integration service ... powered by Apache NiFi.
+
+The keyword is managed. You're not provisioning clusters. Not managing ZooKeeper. Not debugging Kubernetes networking. Snowflake does that.
+
+It's open and extensible. 276 open-source processors plus 88 Snowflake-built ones. Structured, unstructured, streaming, batch. Every data type, every source.
+
+And you get deployment choice. Snowflake-hosted on SPCS ... or BYOC, Bring Your Own Cloud, where the runtime sits in your AWS account.
+
+Think of it as one platform to replace the three or four tools you're stitching together today.
+
+
+
+... Slide 6 ... NiFi Overview ... section break ...
+
+
+
+... Slide 7 ... OpenFlow is Built on Apache NiFi ...
+
+Under the hood ... Apache NiFi. Originally built by the NSA as Niagarafiles in 2006. Open-sourced in 2014. Battle-tested at the world's most demanding organizations for over a decade.
+
+Here's the important part. Snowflake didn't just adopt NiFi. We acquired Datavolo ... the company founded by the NiFi creators ... in November 2024. The people who built NiFi now work at Snowflake.
+
+You're not getting a fork of NiFi. You're getting NiFi from the source, with Snowflake's enterprise muscle behind it.
+
+
+
+... Slide 8 ... What is Apache NiFi Known For ...
+
+Before I show you what OpenFlow adds, let me be fair to NiFi. Five things it's famous for.
+
+Data provenance ... full chain of custody. Trace any record to its origin.
+
+Back-pressure ... downstream slows down? NiFi buffers gracefully. No crashes.
+
+Guaranteed delivery ... write-ahead logs. Zero data loss, even during failures.
+
+Visual design ... drag-and-drop canvas. Your business analysts can actually read the pipeline.
+
+Extensibility ... 276 plus processors. If a connector doesn't exist, build one.
+
+So NiFi is powerful. The real question is ... if NiFi is this good, why do you need OpenFlow? ... Let me show you.
+
+
+
+... Slide 9 ... What OpenFlow Solves ... section break ...
+
+This is the most important section. NiFi is a phenomenal engine. But running NiFi at enterprise scale, in production, with SLAs? ... That's a completely different game.
+
+
+
+... Slide 10 ... OpenFlow Supercharges Apache NiFi ...
+
+Four things that change when you go from NiFi to OpenFlow.
+
+Number one ... Cloud-Native Refresh. NiFi 1 point x needed ZooKeeper and JVM clusters. NiFi 2 point x needs Kubernetes. Either way, that's a full-time ops team. OpenFlow? You click deploy in Snowsight. Snowflake manages the Kubernetes cluster, node scaling, image updates, health checks. You build flows, not infrastructure.
+
+Number two ... Simplified Security. Self-managed NiFi means D I Y authentication, D I Y TLS, D I Y secrets. Enterprise InfoSec teams hate that. OpenFlow inherits Snowflake Identity ... OAuth2, RBAC with Admin, Editor, Viewer roles, PrivateLink, Tri-Secret Secure, Vault integration. Security comes built-in, not bolted on.
+
+Number three ... Extended for Modern AI. This is the one no open-source NiFi user gets. OpenFlow has native connectors for unstructured data ... SharePoint, S3, GCS ... that land documents, images, audio, video directly into Snowflake for Cortex AI. RAG-powered chatbots, document intelligence, search ... all fed by OpenFlow.
+
+Number four ... Secure, Continuous Unstructured Ingestion. Not just a one-time load. Continuous sync with permission honoring from source systems. Your governance story stays intact.
+
+Here's the analogy I want you to remember. NiFi is the engine. OpenFlow is the production-ready car ... power steering, airbags, GPS, and a full maintenance contract. You wouldn't build a car from an engine. Don't build a data platform from raw NiFi.
+
+
+
+... Slide 11 ... Snowflake for Data Engineering ...
+
+Where does OpenFlow fit in the bigger picture?
+
+Think of the data lifecycle. Ingest ... Transform ... Orchestrate ... Deliver.
+
+OpenFlow is your Extract and Load. The E L in E L T. It lands raw data fast. Then Dynamic Tables, dbt, Snowpark, Stored Procedures handle the transformation inside Snowflake.
+
+OpenFlow doesn't try to do everything. It does one thing brilliantly ... get your data in. Then it hands off to the most powerful compute engine in the cloud.
+
+
+
+... Slide 12 ... Why OpenFlow is Important ...
+
+Four capabilities in one platform. Extract, Load, Preprocess, Activate.
+
+Preprocess ... row-level transforms in-flight. Mask PII before it even hits Snowflake. Filter, route, enrich.
+
+Activate ... reverse ETL. Push data back to SaaS systems, APIs, downstream consumers.
+
+And everything runs on one bill, one dashboard, one security model.
+
+Today you pay Fivetran for ingestion, Hightouch for reverse ETL, and Datadog for monitoring. OpenFlow collapses all three into your existing Snowflake contract.
+
+
+
+... Slide 13 ... Ingestion Options for Every Use Case ...
+
+Snowflake now has a complete ingestion portfolio. Let me position each so there's no confusion.
+
+Snowpipe ... file drops from S3, GCS, Azure. Serverless. About 30 second latency.
+
+Snowpipe Streaming ... sub 5 second. Serverless. But you need a client app to push data.
+
+OpenFlow ... enterprise-wide. CDC, streaming, SaaS, unstructured. The platform play when you need more than file drops.
+
+ETL Partners ... Fivetran, Informatica. Leverage what you have.
+
+Here's a nuance I want you to take away. OpenFlow CDC connectors use Snowpipe Streaming under the hood for the ingestion phase ... and that part is free. What costs credits is the warehouse running the MERGE.
+
+OpenFlow isn't competing with Snowpipe. It's built on top of it. You get the best of both.
+
+
+
+... Slide 14 ... OpenFlow Architecture ... section break ...
+
+Now let's pop the hood.
+
+
+
+... Slide 15 ... OpenFlow Architecture ...
+
+Three layers. Simple.
+
+Control Plane ... fully managed in your Snowflake account. This is mission control. Manage deployments, install connectors, set up alerts. Always on.
+
+Connectors ... 18 G A and growing. Database, streaming, SaaS, unstructured. Broad and getting broader every quarter.
+
+Deployment Options ... Snowflake-hosted on SPCS, or customer-hosted BYOC. BYOC has two flavors ... Snowflake-managed VPC or Bring Your Own VPC.
+
+Built on NiFi 2 point x. Cloud-native. No ZooKeeper. No JVM clustering headaches.
+
+
+
+... Slide 16 ... Handling Global Data Movement ...
+
+This diagram shows the big picture. Control Plane manages both SPCS and BYOC deployments. Each deployment runs runtimes where your flows execute.
+
+Real-world pattern. SPCS for your SaaS connectors ... Salesforce, Workday ... public endpoints. BYOC for your Oracle database sitting in a private subnet. Both managed from one Snowflake account.
+
+One rule. OpenFlow must be in the same region as your Snowflake account. The source can be anywhere ... cross-region, on-prem, different cloud.
+
+One control plane, multiple deployment models, any data source. That's the architecture.
+
+
+
+... Slide 17 ... Connectors and Flows ... section break ...
+
+Let's talk about what you connect to.
+
+
+
+... Slide 18 ... NiFi Processor versus OpenFlow Connector ...
+
+Quick terminology.
+
+Processor ... a single building block. 276 from Apache, 88 from Snowflake. Low-level.
+
+Connector ... a curated, versioned, Snowflake-built flow composed of multiple processors. Pre-configured for performance, fault-tolerance, and simplicity. 18 G A today.
+
+Processors are LEGO bricks. Connectors are the complete LEGO set with instructions. You can build custom, but most customers don't need to ... connectors work out of the box.
+
+
+
+... Slide 19 ... Deployments and Runtimes ...
+
+Two concepts to remember.
+
+Deployment ... the infrastructure envelope. BYOC equals a Kubernetes cluster in your cloud. SPCS equals compute pools in Snowflake.
+
+Runtime ... where flows actually run. Multiple runtimes per deployment. Each gets its own NiFi UI, own sizing, own scaling, own security boundary.
+
+Here's my analogy. Deployment is the building. Runtimes are floors. Each floor has its own badge, resources, and team. A noisy CDC flow on floor 3 won't impact the SaaS connector on floor 5.
+
+Sizing. Small equals 1 vCPU. Medium equals 4 vCPU. Large equals 8 vCPU. Min nodes equals 0 is valid ... pay nothing when idle.
+
+Isolate workloads, control costs, scale independently. That's what runtimes give you.
+
+
+
+... Slide 20 ... OpenFlow Connectors ... Four Categories ...
+
+Database ... zero-impact CDC. Reads the transaction log, not the database. Your production DB doesn't even notice. Deferred merge ... Snowpipe Streaming captures changes in real-time, warehouse runs MERGE on your schedule. Postgres, MySQL, SQL Server, Oracle ... all G A.
+
+Streaming ... Kafka, Kinesis, Event Hub. Up to 10 gigabytes per second. Auto-scaling. Write directly to Snowflake or Iceberg tables.
+
+Unstructured ... SharePoint, S3, GCS, Azure Blob. Documents, images, audio, video ... directly into Snowflake for Cortex AI. Maintains source permissions.
+
+SaaS ... Salesforce, Google Sheets, Workday, ServiceNow. Initial plus incremental sync. OAuth, API tokens, credentials.
+
+Four connector categories. 18 G A connectors. One platform for every data type your organization has.
+
+
+
+... Slide 21 ... Connector Roadmap ...
+
+Google BigQuery, Azure Data Lake Storage, more SaaS connectors ... all on the roadmap. These are directional. Check release notes for current availability.
+
+The connector library is growing every quarter. If you don't see your source today, it's likely coming soon.
+
+
+
+... Slide 22 ... Getting Started with Connectors ...
+
+Four steps. This is how easy it is.
+
+One ... discover and install from Snowsight. No CLI, no YAML files.
+Two ... configure source and destination.
+Three ... start the process group.
+Four ... customize if you need to.
+
+For CDC, the initial snapshot happens automatically, then it switches to real-time change capture. You don't manage the cutover.
+
+From zero to replicating data in under 15 minutes. I'll prove it in the demo.
+
+
+
+... Slide 23 ... Inflight Transformations ...
+
+OpenFlow handles row-level transforms before data lands in Snowflake. Schema changes, filtering, PII masking, routing to different tables, enrichment via lookups or API calls, encryption.
+
+For the heavy stuff ... aggregations, joins, window functions ... use Snowflake's engine. Dynamic Tables, Snowpark, dbt, Tasks.
+
+OpenFlow lands clean, masked, routed raw data. Snowflake transforms it into gold. Each tool does what it's best at.
+
+
+
+... Slide 24 ... Deployment Models ... section break ...
+
+Let's talk about where this actually runs.
+
+
+
+... Slide 25 ... SPCS versus BYOC ...
+
+Two options, side by side.
+
+Snowflake Hosted, SPCS. Fastest to deploy. No infrastructure to manage. Perfect for public endpoints ... Workday, Salesforce, SharePoint. Public Preview on AWS and Azure. GCP is roadmap.
+
+Customer Hosted, BYOC. Runtime in your AWS account. Snowflake manages it. Greater control over networking ... VPC peering, PrivateLink, Direct Connect. G A on AWS. Azure and GCP roadmap.
+
+Three reasons to go BYOC. One ... private data sources behind firewalls. Two ... data residency requirements. Three ... leverage your existing AWS reserved instance pricing.
+
+Public endpoints? SPCS in 10 minutes. Private databases? BYOC with full network control. You're not locked into one model.
+
+
+
+... Slide 26 ... BYOC Options ...
+
+Within BYOC, two flavors.
+
+Snowflake Managed VPC ... Snowflake creates the VPC, subnets, gateways. Easiest setup.
+
+Bring Your Own VPC ... you provide an existing VPC. More control. This is what you want when your database is already in a specific VPC.
+
+Real example. A financial services client has Oracle RDS in a private subnet in Mumbai. BYO-VPC lets us deploy OpenFlow into the same VPC. Zero data leaving the network boundary.
+
+Your data, your VPC, your rules. Snowflake just manages the runtime inside it.
+
+
+
+... Slide 27 ... Connectivity Decision Tree ...
+
+Simple flowchart.
+
+Source on public internet? ... SPCS. Done.
+Not public but supports PrivateLink? ... SPCS or BYOC, your call.
+Behind a firewall, no PrivateLink? ... BYOC. On-prem? Add Direct Connect.
+
+No dead ends. Whatever your network topology, there's a path to Snowflake.
+
+
+
+... Slide 28 ... Compliance Certifications ...
+
+SOC 2, HIPAA, FedRAMP ... targets are on this slide. Check the Snowflake Trust Center for latest status. Dates may shift.
+
+Compliance is in motion. If you have specific requirements, let's map them together.
+
+
+
+... Slide 29 ... BYOC Recommended Deployment Pattern ...
+
+Best practice. Separate deployments for pre-prod and prod. Multiple runtimes within each for workload isolation.
+
+Keep Snowflake account and BYOC deployment in the same cloud and region. Not required, but strongly recommended.
+
+This is how enterprises run it. Dev and prod isolated. Teams isolated. Blast radius contained.
+
+
+
+... Slide 30 ... Secure Data Pipelines ... BYOC ...
+
+This is the slide that wins over InfoSec teams.
+
+BYOC sits in the customer's VPC. PrivateLink to Snowflake. VPC peering to data source VPCs. Direct Connect to on-prem.
+
+Data flow. Source ... to OpenFlow in your VPC ... to Snowflake via PrivateLink. At no point does data touch the public internet.
+
+Your CISO's two favorite words ... private ... and encrypted. OpenFlow delivers both.
+
+
+
+... Slide 31 ... Secure Data Pipelines ... SPCS ...
+
+For SPCS ... similar security model but the runtime lives inside Snowflake's environment. PrivateLink available on Business Critical and VPS editions.
+
+Need to reach back to on-prem from SPCS? Transitive routing ... your networking team sets that up.
+
+Even on SPCS, you're not exposed. PrivateLink keeps everything internal.
+
+
+
+... Slide 32 ... Multi-Cloud Data Pipelines ...
+
+Ingest from any cloud. Land into Snowflake tables or Iceberg tables. Transform with dbt or Snowpark. Govern with Horizon Catalog.
+
+OpenFlow is the universal on-ramp. It doesn't matter where your data lives today.
+
+
+
+... Slide 33 ... OpenFlow Observability ... section break ...
+
+Now the question every ops team asks ... how do I know it's working?
+
+
+
+... Slide 34 ... Recommended Alerts ...
+
+One command. Create Recommended Alerts. Configure your email notification. Done.
+
+Out-of-the-box alert configurations. Snowflake monitors your OpenFlow pipelines and fires alerts when connectors have issues or miss performance targets.
+
+No manual Event Table queries. No custom scripts. No Grafana dashboards to build.
+
+Monitoring shouldn't be a project. With OpenFlow, it's a one-line command.
+
+
+
+... Slide 35 ... Connector Dashboard and CDC Replication Status ...
+
+Snowsight ... Ingestion ... OpenFlow. One screen.
+
+See every deployed connector. Health. Performance. CDC replication status per table. Which tables are current, which are lagging, and why.
+
+Debug without opening the NiFi canvas.
+
+Your data engineers get operational visibility without learning NiFi. That's hours saved every week.
+
+
+
+... Slide 36 ... Log Explorer and Troubleshooting ...
+
+When you need to go deeper ... the Issues tab shows errors in plain English. Deep-link into Log Explorer with pre-set OpenFlow filters.
+
+For power users ... NiFi UI remains your primary operational dashboard. SPCS logs via system get service logs. BYOC gets CloudWatch too.
+
+Three levels of depth. Dashboard for execs. Issues tab for engineers. Raw logs for SREs. Everyone gets what they need.
+
+
+
+... Slide 37 ... Demo ... section break ...
+
+Enough slides. Let me show you the real thing.
+
+I'm going to replicate a live Postgres database to Snowflake using CDC. Every insert, update, delete captured in real-time. Then I'll ingest SharePoint documents and show how Cortex AI makes them searchable.
+
+Watch how fast the data shows up.
+
+... pause for demo ...
+
+See that? A row was just inserted in Postgres. And it's already in Snowflake. That's CDC through OpenFlow. Near-real-time. Zero custom code.
+
+
+
+... Slide 38 ... Use Cases ... section break ...
+
+Let me put this in the context of real problems you're solving today.
+
+
+
+... Slide 39 ... CDC Replication ... Before and After ...
+
+Before OpenFlow. You'd stitch together AWS DMS to land in S3. Snowpipe to pick up files. Custom Python or dbt scripts to run the MERGE. Custom logic to handle deletes. Custom alerting when schemas change at 2 AM. Engineer-months of maintenance.
+
+After OpenFlow. One CDC connector. Reads the transaction log ... zero impact on your production database. Snowpipe Streaming ingests in real-time. Deferred MERGE applies changes. Inserts, updates, deletes ... all captured automatically. Schema evolution handled.
+
+Latency. P90 equals 2 minutes. P95 equals 5 minutes. P100 under 10 minutes, including the MERGE.
+
+Every company we talk to has a DMS to S3 to Snowpipe pipeline that breaks. OpenFlow replaces the entire thing with one connector.
+
+
+
+... Slide 40 ... Unlocking Unstructured Data for AI ...
+
+This is the AI use case ... and it's the one that gets executives excited.
+
+Before. Untapped value sitting in SharePoint, file servers, cloud storage. Complex multi-vendor solutions. Pipeline latency. Orchestration nightmares.
+
+After. OpenFlow ingests documents, images, audio, video directly into Snowflake. Pair with Cortex Search for RAG-powered chatbots. Cortex AI for summarization, classification, extraction. Streamlit for the front-end.
+
+End-to-end governance. Source system permissions are honored all the way through.
+
+Your unstructured data is your biggest untapped asset. OpenFlow turns it into an AI-ready corpus in hours, not months.
+
+
+
+... Slide 41 ... Streaming Analytics ...
+
+Before. Kafka Connect with the Snowflake sink connector. You manage Connect clusters, handle failures, monitor lag. Or Amazon Firehose to S3 to Snowpipe ... extra hops, extra latency.
+
+After. Kafka, Kinesis, Event Hub ... to OpenFlow ... to Snowflake. Direct. Up to 10 gigabytes per second. Auto-scaling. No Connect clusters to manage.
+
+Dynamic Tables on top for continuous transformation. Dashboards and Streamlit apps consume in near real-time.
+
+Streaming shouldn't require a streaming team. OpenFlow makes it an ops-free pattern.
+
+
+
+... Slide 42 ... Customer 360 ... Holistic Analytics ...
+
+Before. Export SaaS data to disk. Upload to cloud storage. Snowpipe. Hope the schema didn't change. Repeat for every SaaS app. Join manually. Pray it works.
+
+After. Salesforce plus ServiceNow plus Workday ... to OpenFlow ... to Snowflake staging tables. Join with your transactional data. dbt or Dynamic Tables for transformation. One complete customer view.
+
+Customer 360 is a vision everyone talks about. OpenFlow is how you actually build it ... one platform, one billing, one governance model.
+
+
+
+... Slide 43 ... Thank You ...
+
+That's the story. OpenFlow ... one managed platform to get every kind of data into Snowflake, securely, in near real-time.
+
+Three things I want you to remember.
+
+One ... it's managed. You build flows. Snowflake runs the infrastructure.
+
+Two ... it's flexible. SPCS or BYOC. Public or private. Structured or unstructured.
+
+Three ... it's native. One bill. One dashboard. One security model. No third-party sprawl.
+
+I can have a proof of concept running with your data in under a day. ... Let's set that up.
+
+... Questions?
