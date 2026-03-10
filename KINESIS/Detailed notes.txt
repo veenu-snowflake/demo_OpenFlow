@@ -1,0 +1,235 @@
+* Here's the complete documentation for your Amazon Kinesis + Openflow demo:
+
+  ────────────────────────────────────────
+
+  Amazon Kinesis Connector Demo -- Openflow (SPCS)
+
+  Account: SFSEAPAC-VYADAV_AWS_AU | Runtime: RT_SKO_26 | Deployment Type: SPCS
+
+  ────────────────────────────────────────
+
+  What Was Completed
+
+  1. AWS CLI Installation
+
+    brew install awscli
+    aws --version
+    # aws-cli/2.34.4
+
+  2. AWS Credentials Configuration
+
+    aws configure
+    # AWS Access Key ID: <your-key>
+    # AWS Secret Access Key: <your-secret>
+    # Default region name: ap-southeast-2
+    # Default output format: json
+
+  3. Openflow Runtime Authentication (PAT Refresh)
+
+  Updated nipyapi profile with a fresh Personal Access Token:
+
+    # Profile: vyadav_my_demo_connection_aws_au_rtsko26
+    # Runtime URL: https://of--sfseapac-vyadav-aws-au.snowflakecomputing.app/rtsko26/nifi-api
+    # Verified with:
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 system get_nifi_version_info
+    # NiFi version: 2026.2.3.19
+
+  4. Network Rule Created (Kinesis ap-southeast-2)
+
+    USE ROLE SYSADMIN;
+    USE DATABASE OPENFLOW;
+    USE SCHEMA PUBLIC;
+
+    CREATE OR REPLACE NETWORK RULE KINESIS_OPENFLOW_NETWORK_RULE
+      TYPE = HOST_PORT
+      MODE = EGRESS
+      VALUE_LIST = (
+        'kinesis.ap-southeast-2.amazonaws.com',
+        'kinesis-fips.ap-southeast-2.api.aws',
+        'kinesis-fips.ap-southeast-2.amazonaws.com',
+        'kinesis.ap-southeast-2.api.aws',
+        '*.control-kinesis.ap-southeast-2.amazonaws.com',
+        '*.control-kinesis.ap-southeast-2.api.aws',
+        '*.data-kinesis.ap-southeast-2.amazonaws.com',
+        '*.data-kinesis.ap-southeast-2.api.aws',
+        'dynamodb.ap-southeast-2.amazonaws.com',
+        'monitoring.ap-southeast-2.amazonaws.com:80',
+        'monitoring.ap-southeast-2.amazonaws.com:443',
+        'monitoring-fips.ap-southeast-2.amazonaws.com:80',
+        'monitoring-fips.ap-southeast-2.amazonaws.com:443',
+        'monitoring.ap-southeast-2.api.aws:80',
+        'monitoring.ap-southeast-2.api.aws:443'
+      );
+
+  5. External Access Integration Created
+
+    USE ROLE ACCOUNTADMIN;
+
+    CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION KINESIS_EAI
+      ALLOWED_NETWORK_RULES = (OPENFLOW.PUBLIC.KINESIS_OPENFLOW_NETWORK_RULE)
+      ENABLED = TRUE
+      COMMENT = 'External Access Integration for Openflow Amazon Kinesis connectivity';
+
+    GRANT USAGE ON INTEGRATION KINESIS_EAI TO ROLE OPENFLOW_RUNTIME_RL;
+
+  6. EAI Attached to Runtime (UI)
+
+  • Openflow Control Plane > Runtimes > RT_SKO_26 > ... > External access integrations > Selected
+  KINESIS_EAI > Save
+
+  7. Kinesis Connector Already Deployed
+
+  The kinesis-json-modularized connector (v0.2.0) was already deployed on the runtime:
+
+  • Process Group ID: d566ff22-019c-1000-ffff-ffffa9df6cd3
+  • State: STOPPED (unconfigured)
+
+  ────────────────────────────────────────
+
+  What Remains (once AWS Kinesis stream access is available)
+
+  Step A: Create Kinesis Stream in AWS
+
+    aws kinesis create-stream \
+      --stream-name openflow-demo-kinesis \
+      --shard-count 1 \
+      --region ap-southeast-2
+
+  Verify:
+
+    aws kinesis describe-stream-summary \
+      --stream-name openflow-demo-kinesis \
+      --region ap-southeast-2
+
+  Step B: Send Test Data to the Stream
+
+    aws kinesis put-record \
+      --stream-name openflow-demo-kinesis \
+      --partition-key "test-key" \
+      --data '{"id": 1, "name": "demo-record", "timestamp": "2026-03-10T00:00:00Z"}' \
+      --region ap-southeast-2
+
+  Step C: Configure Source Parameters
+
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci configure_inherited_params \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3 \
+      --parameters '{
+        "Kinesis JSON Source Parameters (1)": {
+          "Kinesis Stream Name": "openflow-demo-kinesis",
+          "AWS Region Code": "ap-southeast-2",
+          "AWS Access Key ID": "<YOUR_AWS_ACCESS_KEY_ID>",
+          "AWS Secret Access Key": "<YOUR_AWS_SECRET_ACCESS_KEY>",
+          "Kinesis Application Name": "openflow-demo-app",
+          "Kinesis Initial Stream Position": "TRIM_HORIZON",
+          "Kinesis Consumer Type": "SHARED_THROUGHPUT",
+          "Metrics Publishing": "DISABLED"
+        }
+      }'
+
+  Parameter details:
+
+  ┌───────────────────────────────┬─────────────────────┬────────────────────────────────────────────┐
+  │ Parameter                     │ Value               │ Notes                                      │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ Kinesis Stream Name           │ openflow-demo-kine… │ Your stream name                           │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ AWS Region Code               │ ap-southeast-2      │ Region where stream lives                  │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ AWS Access Key ID             │ <secret>            │ IAM user with Kinesis read access          │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ AWS Secret Access Key         │ <secret>            │ Corresponding secret key                   │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ Kinesis Application Name      │ openflow-demo-app   │ Name for DynamoDB tracking table           │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ Kinesis Initial Stream Posit… │ TRIM_HORIZON        │ Start from earliest record (or LATEST)     │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ Kinesis Consumer Type         │ SHARED_THROUGHPUT   │ Use ENHANCED_FAN_OUT for dedicated throug… │
+  ├───────────────────────────────┼─────────────────────┼────────────────────────────────────────────┤
+  │ Metrics Publishing            │ DISABLED            │ Set to CLOUDWATCH if monitoring needed     │
+  └───────────────────────────────┴─────────────────────┴────────────────────────────────────────────┘
+
+  Step D: Configure Destination Parameters
+
+  First create the destination database:
+
+    -- Run in Snowflake
+    CREATE DATABASE IF NOT EXISTS KINESIS_DEMO;
+    CREATE SCHEMA IF NOT EXISTS KINESIS_DEMO.PUBLIC;
+
+  Then configure:
+
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci configure_inherited_params \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3 \
+      --parameters '{
+        "Streaming Destination Parameters (1)": {
+          "Destination Database": "KINESIS_DEMO",
+          "Destination Schema": "PUBLIC",
+          "Snowflake Authentication Strategy": "SNOWFLAKE_MANAGED",
+          "Snowflake Role": "OPENFLOW_RUNTIME_RL"
+        }
+      }'
+
+  Step E: Verify Controller Configuration
+
+    # Verify controllers (before enabling)
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci verify_config \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3 \
+      --verify_processors=false
+
+  Step F: Enable Controllers
+
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci enable_controllers \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3
+
+  Step G: Verify Processor Configuration
+
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci verify_config \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3 \
+      --verify_controllers=false
+
+  Step H: Start the Connector
+
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci start_flow \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3
+
+  Step I: Validate Data Flow
+
+    # Check status
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      ci get_status \
+      --process_group_id d566ff22-019c-1000-ffff-ffffa9df6cd3
+    # Expect: running_processors > 0, bulletin_errors = 0
+
+    # Check bulletins for errors
+    nipyapi --profile vyadav_my_demo_connection_aws_au_rtsko26 \
+      bulletins get_bulletin_board
+
+  Verify data landed in Snowflake:
+
+    SELECT * FROM KINESIS_DEMO.PUBLIC.<table_name> LIMIT 10;
+
+  ────────────────────────────────────────
+
+  Architecture Summary
+
+    AWS Kinesis Stream (ap-southeast-2)
+            |
+            v
+      [EAI: KINESIS_EAI]
+      [Network Rule: KINESIS_OPENFLOW_NETWORK_RULE]
+            |
+            v
+      Openflow Runtime (RT_SKO_26, SPCS)
+      [kinesis-json-modularized connector]
+            |
+            v
+      Snowflake Table (KINESIS_DEMO.PUBLIC)
+
+  ────────────────────────────────────────
+
